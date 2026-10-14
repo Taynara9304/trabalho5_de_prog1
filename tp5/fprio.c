@@ -3,8 +3,10 @@
 // Marcos Castilho, inclui as structs no arquivo.c, Out 2025
 // Implementação com lista encadeada simples
 
-#include <fprio.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "fprio.h"
 
 // descreve um nodo da fila de prioridades
 // NAO altere estas estruturas
@@ -64,18 +66,126 @@ struct fprio_t *fprio_destroi (struct fprio_t *f)
 // na ordem em que inseriu).
 // Inserir duas vezes o mesmo item (o mesmo ponteiro) é um erro.
 // Retorno: número de itens na fila após a operação ou -1 se erro.
-int fprio_insere (struct fprio_t *f, void *item, int tipo, int prio);
+int fprio_insere (struct fprio_t *f, void *item, int tipo, int prio) {
+  struct fpnodo_t *elemento = malloc(sizeof(struct fpnodo_t));
+  elemento->item = item;
+  elemento->tipo = tipo;
+  elemento->prio = prio;
+    elemento->prox = NULL;
+
+
+  memset(elemento, 0, sizeof(struct fpnodo_t));
+
+  // caso seja o primeiro elemento
+  if (!f->num) {
+    f->prim = elemento;
+    elemento->prox = NULL; // precisa dessa linha?
+    
+    f->num += 1;
+    return f->num;
+  }
+
+  // compara com o primeiro
+  if (f->prim->prio > elemento->prio) {
+    elemento->prox = f->prim;
+    f->prim = elemento;
+
+    f->num += 1;
+    return f->num;
+  }
+
+  
+  
+
+  // caso não seja o primeiro
+  int i = 0;
+  struct fpnodo_t *aux = f->prim;
+
+  while (i < f->num -1)
+  {
+
+    if (aux->prox->prio > elemento->prio) {
+      elemento->prox = aux->prox;
+      aux->prox = elemento;
+
+      f->num += 1;
+      return f->num;
+    }
+
+    // se for igual e não for o último
+    if ((f->prim->prio == elemento->prio) && (i < f->num -1))
+    {
+      elemento->prox = aux->prox->prox;
+      aux->prox->prox = elemento;
+
+      f->num += 1;
+      return f->num;
+    }
+
+    i++;
+    aux = aux->prox;
+  }
+  
+  // caso ele seja o ultimo elemento
+  aux->prox = elemento;
+
+  f->num += 1;
+  return f->num;
+}
 
 // Retira o primeiro item da fila e o devolve; o tipo e a prioridade
 // do item são devolvidos nos parâmetros "tipo" e "prio".
 // Retorno: ponteiro para o item retirado ou NULL se fila vazia ou erro.
-void *fprio_retira (struct fprio_t *f, int *tipo, int *prio);
+void *fprio_retira (struct fprio_t *f, int *tipo, int *prio) {
+  if ((!f) || (!f->prim))
+    return NULL;
+
+  struct fpnodo_t *aux = f->prim;
+  
+  // se a fila só tiver 1 elemento
+  if (!f->prim->prox)
+  {
+    free(f->prim->item);
+    free(f->prim);
+    f->prim = NULL;
+  }
+  
+  *tipo = f->prim->tipo;
+  *prio = f->prim->prio;
+
+  free(f->prim->item);
+  free(f->prim);
+  
+  f->prim = f->prim->prox;
+
+  return aux;
+}
 
 // Informa o número de itens na fila.
 // Retorno: N >= 0 ou -1 se erro.
-int fprio_tamanho (struct fprio_t *f);
+int fprio_tamanho (struct fprio_t *f) {
+  return f->num;
+}
 
 // Imprime o conteúdo da fila no formato "(tipo prio) (tipo prio) ..."
 // Para cada item deve ser impresso seu tipo e sua prioridade, com um
 // espaço entre valores, sem espaços antes ou depois e sem nova linha.
-void fprio_imprime (struct fprio_t *f);
+void fprio_imprime (struct fprio_t *f) {
+  if (!f)
+    return;
+
+  struct fpnodo_t *aux = f->prim;
+
+  if (!f->num)
+    return;
+
+  for (int i = 0; i < f->num - 2; i++)
+  {
+    printf("(%d ", aux->tipo);
+    printf("%d) ", aux->prio);
+    aux = aux->prox;
+  }
+
+  printf("(%d ", aux->tipo);
+  printf("%d)", aux->prio);
+}
