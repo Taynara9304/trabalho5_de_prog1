@@ -67,19 +67,34 @@ struct fprio_t *fprio_destroi (struct fprio_t *f)
 // Inserir duas vezes o mesmo item (o mesmo ponteiro) é um erro.
 // Retorno: número de itens na fila após a operação ou -1 se erro.
 int fprio_insere (struct fprio_t *f, void *item, int tipo, int prio) {
+  if (!f || !item)
+    return -1;
+
+  // verifica se o item já está na fila
+  struct fpnodo_t *aux = f->prim;
+  while (aux)
+  {
+    if (aux->item == item)
+      return -1;
+    aux = aux->prox;
+  }
+
   struct fpnodo_t *elemento = malloc(sizeof(struct fpnodo_t));
+
+  if (!elemento)
+    return -1;
+  
+  memset(elemento, 0, sizeof(struct fpnodo_t));
+
   elemento->item = item;
   elemento->tipo = tipo;
   elemento->prio = prio;
-    elemento->prox = NULL;
-
-
-  memset(elemento, 0, sizeof(struct fpnodo_t));
+  elemento->prox = NULL;
 
   // caso seja o primeiro elemento
   if (!f->num) {
     f->prim = elemento;
-    elemento->prox = NULL; // precisa dessa linha?
+    elemento->prox = NULL;
     
     f->num += 1;
     return f->num;
@@ -94,12 +109,9 @@ int fprio_insere (struct fprio_t *f, void *item, int tipo, int prio) {
     return f->num;
   }
 
-  
-  
-
   // caso não seja o primeiro
   int i = 0;
-  struct fpnodo_t *aux = f->prim;
+  aux = f->prim;
 
   while (i < f->num -1)
   {
@@ -107,16 +119,6 @@ int fprio_insere (struct fprio_t *f, void *item, int tipo, int prio) {
     if (aux->prox->prio > elemento->prio) {
       elemento->prox = aux->prox;
       aux->prox = elemento;
-
-      f->num += 1;
-      return f->num;
-    }
-
-    // se for igual e não for o último
-    if ((f->prim->prio == elemento->prio) && (i < f->num -1))
-    {
-      elemento->prox = aux->prox->prox;
-      aux->prox->prox = elemento;
 
       f->num += 1;
       return f->num;
@@ -137,33 +139,28 @@ int fprio_insere (struct fprio_t *f, void *item, int tipo, int prio) {
 // do item são devolvidos nos parâmetros "tipo" e "prio".
 // Retorno: ponteiro para o item retirado ou NULL se fila vazia ou erro.
 void *fprio_retira (struct fprio_t *f, int *tipo, int *prio) {
-  if ((!f) || (!f->prim))
+  if ((!f) || (!f->prim) || (!tipo) || (!prio))
     return NULL;
 
   struct fpnodo_t *aux = f->prim;
-  
-  // se a fila só tiver 1 elemento
-  if (!f->prim->prox)
-  {
-    free(f->prim->item);
-    free(f->prim);
-    f->prim = NULL;
-  }
-  
-  *tipo = f->prim->tipo;
-  *prio = f->prim->prio;
+  void *item = aux->item;
 
-  free(f->prim->item);
-  free(f->prim);
-  
-  f->prim = f->prim->prox;
+  *tipo = aux->tipo;
+  *prio = aux->prio;
 
-  return aux;
+  f->prim = aux->prox;
+  free(aux);
+  f->num -= 1;
+
+  return item;
 }
 
 // Informa o número de itens na fila.
 // Retorno: N >= 0 ou -1 se erro.
 int fprio_tamanho (struct fprio_t *f) {
+  if (!f)
+    return -1;
+  
   return f->num;
 }
 
@@ -179,7 +176,7 @@ void fprio_imprime (struct fprio_t *f) {
   if (!f->num)
     return;
 
-  for (int i = 0; i < f->num - 2; i++)
+  for (int i = 0; i < f->num - 1; i++)
   {
     printf("(%d ", aux->tipo);
     printf("%d) ", aux->prio);
